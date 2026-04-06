@@ -2,8 +2,8 @@
 Contributors: elzahlan
 Tags: category image, taxonomy image, tag image, categories images, category thumb
 Requires at least: 4.0
-Tested up to: 6.9
-Stable tag: 3.3.1
+Tested up to: 6.9.4
+Stable tag: 3.3.2
 License: GPLv3 or later
 License URI: https://www.gnu.org/licenses/gpl-3.0.html
 
@@ -58,6 +58,12 @@ Please check the documentation page:
 https://zahlan.net/blog/2012/06/categories-images/
 
 == Changelog ==
+
+= 3.3.2 =
+* Security release: Fixed an authenticated Stored XSS vulnerability in the `[z_taxonomy_image]` shortcode (CVE-2026-2505).
+* General security hardening: Implemented strict "Escape on Output" for all dynamic strings to comply with WordPress.org coding standards.
+* Refactor: Replaced direct database queries with core WordPress functions to resolve Plugin Check warnings.
+* Maintenance: Verified compatibility to WordPress 6.9.4 and aligned with strict WordPress.org plugin directory standards.
 
 = 3.3.1 =
 * Fixed a potential fatal error during REST API initialization.

@@ -3,7 +3,7 @@ Contributors: elzahlan
 Tags: category image, taxonomy image, tag image, categories images, category thumb
 Requires at least: 4.0
 Tested up to: 6.9.4
-Stable tag: 3.3.2
+Stable tag: 3.3.3
 License: GPLv3 or later
 License URI: https://www.gnu.org/licenses/gpl-3.0.html
 
@@ -58,6 +58,11 @@ Please check the documentation page:
 https://zahlan.net/blog/2012/06/categories-images/
 
 == Changelog ==
+
+= 3.3.3 =
+* Performance Optimization: Reordered attachment lookup to prioritize stored IDs, significantly reducing database load on large sites by avoiding expensive attachment_url_to_postid() calls.
+* Bug Fix: Fixed "Remove Image" button to ensure the Attachment ID is also cleared upon deletion.
+* UX: Implemented event delegation in admin scripts to support AJAX-updated table rows during Quick Edit.
 
 = 3.3.2 =
 * Security release: Fixed an authenticated Stored XSS vulnerability in the `[z_taxonomy_image]` shortcode (CVE-2026-2505).

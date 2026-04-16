@@ -8,7 +8,7 @@
  * Plugin URI: https://zahlan.net/blog/categories-images/
  * Description: Categories Images Plugin allow you to add an image to category or any custom term.
  * Author: Muhammad El Zahlan
- * Version: 3.3.2
+ * Version: 3.3.3
  * Author URI: https://zahlan.net/
  * Domain Path: /languages
  * Text Domain: categories-images
@@ -22,7 +22,7 @@ if (!defined('Z_PLUGIN_URL'))
     define('Z_PLUGIN_URL', untrailingslashit(plugins_url('', __FILE__)));
 
 if (!defined('ZCI_VERSION'))
-    define('ZCI_VERSION', '3.3.2');
+    define('ZCI_VERSION', '3.3.3');
 
 class ZCategoriesImages
 {
@@ -247,8 +247,15 @@ class ZCategoriesImages
     }
 
     function zTaxonomyColumn( $columns, $column, $id ) {
-        if ( $column == 'thumb' )
-            $columns = '<span><img src="' . esc_url($this->zTaxonomyImageUrl($id, 'thumbnail', TRUE)) . '" alt="' . esc_attr(__('Thumbnail', 'categories-images')) . '" class="wp-post-image" /></span>';
+        if ( $column == 'thumb' ) {
+            // Get full URL and ID for Quick Edit
+            $full_url = $this->zTaxonomyImageUrl($id, 'full', FALSE);
+            $image_id = $this->zTaxonomyImageID($id);
+            
+            $columns = '<span><img src="' . esc_url($this->zTaxonomyImageUrl($id, 'thumbnail', TRUE)) . '" alt="' . esc_attr(__('Thumbnail', 'categories-images')) . '" class="wp-post-image" />';
+            $columns .= '<span class="zci-data" style="display:none;" data-url="' . esc_url($full_url) . '" data-id="' . esc_attr($image_id) . '"></span>';
+            $columns .= '</span>';
+        }
         
         return $columns;
     }
@@ -324,16 +331,26 @@ class ZCategoriesImages
             }
         }
         
-        $taxonomy_image_url = $this->zci_get_term_meta($term_id, 'z_taxonomy_image');
-        
-        if(!empty($taxonomy_image_url)) {
-            $attachment_id = $this->zGetAttachmentIdByUrl($taxonomy_image_url);
-            if(empty($attachment_id)) {
-                $attachment_id = $this->zTaxonomyImageID($term_id);
+        $attachment_id = $this->zTaxonomyImageID($term_id);
+        $taxonomy_image_url = '';
+
+        if (!empty($attachment_id)) {
+            $taxonomy_image_src = wp_get_attachment_image_src($attachment_id, $size);
+            if ($taxonomy_image_src) {
+                $taxonomy_image_url = $taxonomy_image_src[0];
             }
-            if(!empty($attachment_id)) {
-                $taxonomy_image_url = wp_get_attachment_image_src($attachment_id, $size);
-                $taxonomy_image_url = $taxonomy_image_url[0];
+        }
+
+        if (empty($taxonomy_image_url)) {
+            $taxonomy_image_url = $this->zci_get_term_meta($term_id, 'z_taxonomy_image');
+            if (!empty($taxonomy_image_url) && empty($attachment_id)) {
+                $attachment_id = $this->zGetAttachmentIdByUrl($taxonomy_image_url);
+                if (!empty($attachment_id)) {
+                    $taxonomy_image_src = wp_get_attachment_image_src($attachment_id, $size);
+                    if ($taxonomy_image_src) {
+                        $taxonomy_image_url = $taxonomy_image_src[0];
+                    }
+                }
             }
         }
 
@@ -356,34 +373,39 @@ class ZCategoriesImages
             }
         }
         
-        $taxonomy_image_url = $this->zci_get_term_meta($term_id, 'z_taxonomy_image');
-        
-        if(!empty($taxonomy_image_url)) {
-            $attachment_id = $this->zGetAttachmentIdByUrl($taxonomy_image_url);
-            if(empty($attachment_id)) {
-                $attachment_id = $this->zTaxonomyImageID($term_id);
+        $attachment_id = $this->zTaxonomyImageID($term_id);
+        $taxonomy_image_url = '';
+        $taxonomy_image = '';
+
+        if (empty($attachment_id)) {
+            $taxonomy_image_url = $this->zci_get_term_meta($term_id, 'z_taxonomy_image');
+            if (!empty($taxonomy_image_url)) {
+                $attachment_id = $this->zGetAttachmentIdByUrl($taxonomy_image_url);
             }
-            if(!empty($attachment_id))
-                $taxonomy_image = wp_get_attachment_image($attachment_id, $size, FALSE, $attr);
-            else {
-                $image_attr = '';
-                if(is_array($attr)) {
-                    if(!empty($attr['class']))
-                        $image_attr .= ' class="'.esc_attr($attr['class']).'" ';
-                    if(!empty($attr['alt']))
-                        $image_attr .= ' alt="'.esc_attr($attr['alt']).'" ';
-                    if(!empty($attr['width']))
-                        $image_attr .= ' width="'.esc_attr($attr['width']).'" ';
-                    if(!empty($attr['height']))
-                        $image_attr .= ' height="'.esc_attr($attr['height']).'" ';
-                    if(!empty($attr['title']))
-                        $image_attr .= ' title="'.esc_attr($attr['title']).'" ';
-                }
-                $taxonomy_image = '<img src="'.esc_url($taxonomy_image_url).'" '.$image_attr.'/>';
-            }
+        } else {
+            $taxonomy_image_url = $this->zci_get_term_meta($term_id, 'z_taxonomy_image');
         }
-        else{
-            $taxonomy_image = '';
+
+        if (!empty($attachment_id)) {
+            $taxonomy_image = wp_get_attachment_image($attachment_id, $size, FALSE, $attr);
+        }
+
+        // Fallback to raw URL if wp_get_attachment_image failed or no ID found
+        if (empty($taxonomy_image) && !empty($taxonomy_image_url)) {
+            $image_attr = '';
+            if(is_array($attr)) {
+                if(!empty($attr['class']))
+                    $image_attr .= ' class="'.esc_attr($attr['class']).'" ';
+                if(!empty($attr['alt']))
+                    $image_attr .= ' alt="'.esc_attr($attr['alt']).'" ';
+                if(!empty($attr['width']))
+                    $image_attr .= ' width="'.esc_attr($attr['width']).'" ';
+                if(!empty($attr['height']))
+                    $image_attr .= ' height="'.esc_attr($attr['height']).'" ';
+                if(!empty($attr['title']))
+                    $image_attr .= ' title="'.esc_attr($attr['title']).'" ';
+            }
+            $taxonomy_image = '<img src="'.esc_url($taxonomy_image_url).'" '.$image_attr.'/>';
         }
 
         if ($echo)
